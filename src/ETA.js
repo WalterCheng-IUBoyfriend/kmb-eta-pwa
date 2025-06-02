@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 function ETA({ favorite, onChangeFavorite }) {
   const [etaData, setEtaData] = useState([]);
@@ -6,14 +6,7 @@ function ETA({ favorite, onChangeFavorite }) {
   const [error, setError] = useState('');
   const [lastUpdated, setLastUpdated] = useState(null);
 
-  useEffect(() => {
-    fetchETA();
-    // 每30秒自動更新一次
-    const interval = setInterval(fetchETA, 30000);
-    return () => clearInterval(interval);
-  }, [favorite]);
-
-  const fetchETA = async () => {
+  const fetchETA = useCallback(async () => {
     try {
       setError('');
       
@@ -46,7 +39,14 @@ function ETA({ favorite, onChangeFavorite }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [favorite]);
+
+  useEffect(() => {
+    fetchETA();
+    // 每30秒自動更新一次
+    const interval = setInterval(fetchETA, 30000);
+    return () => clearInterval(interval);
+  }, [fetchETA]);
 
   const formatTime = (etaString) => {
     if (!etaString) return null;
