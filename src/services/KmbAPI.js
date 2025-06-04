@@ -92,26 +92,31 @@ class KmbAPI {
       return await this.makeRequest('/stop', 'all_stops', 604800000); // 7日緩存
     }
   
-    // 3. 獲取特定路線嘅巴士站
+    // 3. 獲取特定路線嘅巴士站 (Fixed URL format)
     async getRouteStops(route, direction = 'outbound', serviceType = '1') {
-      const directionMap = {
-        'outbound': 'O',
-        'inbound': 'I'
-      };
-      
-      const boundCode = directionMap[direction] || 'O';
-      const endpoint = `/route-stop/${route}/${boundCode}/${serviceType}`;
+      // Use correct endpoint format from API documentation
+      const endpoint = `/route-stop/${route}/${direction}/${serviceType}`;
       const cacheKey = `route_stops_${route}_${direction}_${serviceType}`;
       
       return await this.makeRequest(endpoint, cacheKey, 86400000); // 1日緩存
     }
   
-    // 4. 獲取特定巴士站嘅路線
+    // 4. 獲取特定巴士站嘅路線 (使用正確嘅API實現)
     async getStopRoutes(stopId) {
-      const endpoint = `/stop-route/${stopId}`;
-      const cacheKey = `stop_routes_${stopId}`;
-      
-      return await this.makeRequest(endpoint, cacheKey, 3600000); // 1小時緩存
+      try {
+        // 從緩存中獲取所有路線巴士站關係
+        const allRouteStops = await this.makeRequest('/route-stop', 'all_route_stops', 86400000); // 1日緩存
+        
+        // 過濾出包含指定巴士站嘅路線
+        const stopRoutes = allRouteStops.filter(item => item.stop === stopId);
+        
+        console.log(`✅ Found ${stopRoutes.length} routes for stop ${stopId}`);
+        return stopRoutes;
+        
+      } catch (error) {
+        console.error(`❌ Failed to get routes for stop ${stopId}:`, error);
+        return [];
+      }
     }
   
     // 5. 獲取ETA數據

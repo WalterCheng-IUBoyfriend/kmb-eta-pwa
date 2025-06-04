@@ -33,23 +33,7 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Fix endpoint format based on API documentation
-    let correctedEndpoint = endpoint;
-    
-    // Handle unsupported endpoints
-    if (endpoint.includes('/stop-route/')) {
-      console.log('⚠️ stop-route endpoint not supported by KMB API');
-      return {
-        statusCode: 422,
-        headers,
-        body: JSON.stringify({ 
-          code: "422",
-          message: "Endpoint not supported by KMB API" 
-        })
-      };
-    }
-
-    const kmbUrl = `https://data.etabus.gov.hk/v1/transport/kmb${correctedEndpoint}`;
+    const kmbUrl = `https://data.etabus.gov.hk/v1/transport/kmb${endpoint}`;
     console.log('🚀 Proxying to KMB API:', kmbUrl);
 
     // Add small delay to avoid overwhelming the API
