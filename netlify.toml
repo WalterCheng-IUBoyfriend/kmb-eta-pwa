@@ -4,6 +4,7 @@
 
 [build.environment]
   NODE_VERSION = "18"
+  AWS_LAMBDA_JS_RUNTIME = "nodejs18.x"
 
 [[redirects]]
   from = "/api/*"
@@ -12,3 +13,4 @@
 
 [functions]
   directory = "netlify/functions"
+  node_bundler = "nft"

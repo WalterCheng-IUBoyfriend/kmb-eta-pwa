@@ -38,14 +38,17 @@ exports.handler = async (event, context) => {
     const kmbUrl = `https://data.etabus.gov.hk/v1/transport/kmb${endpoint}`;
     console.log('🚀 Proxying to KMB API:', kmbUrl);
 
+    // 使用native fetch (Node.js 18+ available in Netlify)
     const response = await fetch(kmbUrl, {
       method: 'GET',
       headers: {
-        'User-Agent': 'KMB-PWA-App/1.0'
+        'User-Agent': 'KMB-PWA-App/1.0',
+        'Accept': 'application/json'
       }
     });
 
     if (!response.ok) {
+      console.error(`KMB API Error: ${response.status} ${response.statusText}`);
       throw new Error(`KMB API Error: ${response.status} ${response.statusText}`);
     }
 
@@ -55,7 +58,8 @@ exports.handler = async (event, context) => {
       statusCode: 200,
       headers: {
         ...headers,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Cache-Control': 'public, max-age=300' // 5分鐘緩存
       },
       body: JSON.stringify(data)
     };
