@@ -1,5 +1,3 @@
-
-
 exports.handler = async (event, context) => {
   const headers = {
     'Access-Control-Allow-Origin': '*',
@@ -35,31 +33,56 @@ exports.handler = async (event, context) => {
       };
     }
 
-    const kmbUrl = `https://data.etabus.gov.hk/v1/transport/kmb${endpoint}`;
+    // Fix endpoint format based on API documentation
+    let correctedEndpoint = endpoint;
+    
+    // Handle unsupported endpoints
+    if (endpoint.includes('/stop-route/')) {
+      console.log('⚠️ stop-route endpoint not supported by KMB API');
+      return {
+        statusCode: 422,
+        headers,
+        body: JSON.stringify({ 
+          code: "422",
+          message: "Endpoint not supported by KMB API" 
+        })
+      };
+    }
+
+    const kmbUrl = `https://data.etabus.gov.hk/v1/transport/kmb${correctedEndpoint}`;
     console.log('🚀 Proxying to KMB API:', kmbUrl);
 
-    // 使用native fetch (Node.js 18+ available in Netlify)
+    // Add small delay to avoid overwhelming the API
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // Enhanced headers to mimic real browser requests
     const response = await fetch(kmbUrl, {
       method: 'GET',
       headers: {
-        'User-Agent': 'KMB-PWA-App/1.0',
-        'Accept': 'application/json'
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'application/json, text/plain, */*',
+        'Accept-Language': 'zh-HK,zh;q=0.9,en;q=0.8',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+        'Referer': 'https://data.etabus.gov.hk/',
+        'Origin': 'https://data.etabus.gov.hk',
+        'Sec-Fetch-Dest': 'empty',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Site': 'same-origin'
       }
     });
 
-    if (!response.ok) {
-      console.error(`KMB API Error: ${response.status} ${response.statusText}`);
-      throw new Error(`KMB API Error: ${response.status} ${response.statusText}`);
-    }
-
+    // Return the actual response status and data from KMB API
     const data = await response.json();
 
     return {
-      statusCode: 200,
+      statusCode: response.status,
       headers: {
         ...headers,
         'Content-Type': 'application/json',
-        'Cache-Control': 'public, max-age=300' // 5分鐘緩存
+        'Cache-Control': response.status === 200 ? 'public, max-age=300' : 'no-cache',
+        'X-KMB-Status': response.status.toString()
       },
       body: JSON.stringify(data)
     };
@@ -67,12 +90,14 @@ exports.handler = async (event, context) => {
   } catch (error) {
     console.error('❌ Proxy error:', error);
     
+    // Return actual error instead of fallback data
     return {
       statusCode: 500,
       headers,
       body: JSON.stringify({ 
         error: 'Failed to fetch from KMB API',
-        details: error.message 
+        details: error.message,
+        timestamp: new Date().toISOString()
       })
     };
   }
