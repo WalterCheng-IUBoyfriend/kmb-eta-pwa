@@ -50,6 +50,9 @@ class LocationService {
             case error.TIMEOUT:
               message = 'Location request timed out.';
               break;
+            default:
+              message = 'An unknown location error occurred.';
+              break;
           }
           
           reject(new Error(message));
